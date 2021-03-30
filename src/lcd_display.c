@@ -14,7 +14,13 @@
  * Definitions
  ******************************************************************************/
 #define LCD_DISPLAY_INIT_CMD_SIZE 4 /**< number of init commands */
+
+/**
+ * @brief Clears entire display and sets DDRAM address 0 in
+ * address counter
+ */
 #define LCD_DISPLAY_CMD_CLEAR 0x01 /**< a command to clear display */
+
 #define LCD_DISPLAY_CMD_4BIT 0x28 /**< a command to choose 4-bit interface */
 
 /**
@@ -41,12 +47,14 @@ typedef enum
 const LcdDisplayConfig_t* gConfig; /**< a pointer to the configuration table */
 
 /**
- * brief the Lcd displays data buffers
+ * @brief the Lcd displays data and commands buffers.
+ * The most significant bit determines if the byte is a command or data. 
+ * If it's 1, then the byte is a command.
  */
 static uint8_t LcdDisplayData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
 
 /**
- * brief the UART send buffers structures
+ * @brief the lcd displays data and commands buffers structures
  */
 static CircBuff_t LcdDisplayBuff[LCD_DISPLAY_MAX];
 
@@ -57,12 +65,14 @@ static const uint8_t LcdDisplayInitCmds[LCD_DISPLAY_INIT_CMD_SIZE] =
   LCD_DISPLAY_CMD_ON,
   LCD_DISPLAY_CMD_INC
 };
+
 /******************************************************************************
  * Functions Prototypes
  ******************************************************************************/
 static void LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data,
  LcdDataFlag_t Flag);
 static void LcdDisplay_Delay(void);
+static void LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command);
 /******************************************************************************
  * Functions definitions
  ******************************************************************************/
@@ -99,6 +109,38 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
               return;
             }
         }
+    }
+}
+
+extern void 
+LcdDisplay_Clear(LcdDisplay_t Display)
+{
+  if(!(Display < LCD_DISPLAY_MAX))
+    {
+      //TODO: handle this error
+      return;
+    }
+
+  LcdDisplay_SetCommand(Display, LCD_DISPLAY_CMD_CLEAR);
+}
+
+static void 
+LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
+{
+ if(!(Display < LCD_DISPLAY_MAX))
+    {
+      //TODO: handle this error
+      return;
+    }
+  
+  uint8_t res;
+
+  Command = Command | 0x80;
+  res = CircBuff_Enqueue(&LcdDisplayBuff[Display], Command);
+  if(res == 0) 
+    {
+      //TODO handle this error
+      return;
     }
 }
 

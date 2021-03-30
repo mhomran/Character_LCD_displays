@@ -18,7 +18,10 @@
 #define LCD_DISPLAY_BITLEN 4
 
 //TODO: change as required
-#define LCD_DISPLAY_BUFF_SIZE 40
+/**
+ * @brief the buffer size of the buffer used for holding data or commands 
+ */
+#define LCD_DISPLAY_BUFF_SIZE 40 
 
 /******************************************************************************
  * Includes
