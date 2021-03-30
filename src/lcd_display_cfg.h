@@ -16,6 +16,10 @@
  * interface is the only available option since it's so common.
  */ 
 #define LCD_DISPLAY_BITLEN 4
+
+//TODO: change as required
+#define LCD_DISPLAY_BUFF_SIZE 40
+
 /******************************************************************************
  * Includes
  ******************************************************************************/
