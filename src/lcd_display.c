@@ -21,7 +21,15 @@
  */
 #define LCD_DISPLAY_CMD_CLEAR 0x01 /**< a command to clear display */
 
-#define LCD_DISPLAY_CMD_4BIT 0x28 /**< a command to choose 4-bit interface */
+/**
+ * @brief a command to choose 4-bit interface 
+ * 
+ * @details There are two ways of interfacing the LCD. The first one is the 
+ * 8-bit. The other one is the 4-bit which is the used in this module.
+ * The 4-bit is better in using fewer numbers of IO pins than the 8-bit.
+ * This command is for configuring the LCD for 4-bit
+ */
+#define LCD_DISPLAY_CMD_4BIT 0x28 
 
 /**
  * @brief a command to turn the display on and the cursor off.
@@ -35,10 +43,14 @@
 /******************************************************************************
  * Typedefs
  ******************************************************************************/
+/**
+ * @brief enumeration for the the data type that can be sent to LCD. It can 
+ *be either data or command 
+ */
 typedef enum
 {
   LCD_DATA_FLAG_DATA,
-  LCD_DATA_FLAG_INST,
+  LCD_DATA_FLAG_CMD,
   LCD_DATA_FLAG_MAX
 } LcdDataFlag_t;
 /******************************************************************************
@@ -58,6 +70,9 @@ static uint8_t LcdDisplayData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
  */
 static CircBuff_t LcdDisplayBuff[LCD_DISPLAY_MAX];
 
+/**
+ * @brief The command that's required for LCD display initialization
+ */
 static const uint8_t LcdDisplayInitCmds[LCD_DISPLAY_INIT_CMD_SIZE] =
 {
   LCD_DISPLAY_CMD_CLEAR,
@@ -101,13 +116,7 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
     {
       for(cmd = 0; cmd < LCD_DISPLAY_INIT_CMD_SIZE; cmd++)
         {
-          res = CircBuff_Enqueue(&LcdDisplayBuff[Display], 
-            LcdDisplayInitCmds[cmd]);
-          if(res == 0) 
-            {
-              //TODO handle this error
-              return;
-            }
+          LcdDisplay_SetCommand(Display, LcdDisplayInitCmds[cmd]);
         }
     }
 }
