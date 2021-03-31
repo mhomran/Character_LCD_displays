@@ -71,15 +71,21 @@ static uint8_t LcdDisplayData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
 static CircBuff_t LcdDisplayBuff[LCD_DISPLAY_MAX];
 
 /**
- * @brief The command that's required for LCD display initialization
+ * @brief The command that's required for LCD display initialization. 
+ * Orders of the commands matter
  */
 static const uint8_t LcdDisplayInitCmds[LCD_DISPLAY_INIT_CMD_SIZE] =
 {
-  LCD_DISPLAY_CMD_CLEAR,
   LCD_DISPLAY_CMD_4BIT,
   LCD_DISPLAY_CMD_ON,
-  LCD_DISPLAY_CMD_INC
+  LCD_DISPLAY_CMD_INC,
+  LCD_DISPLAY_CMD_CLEAR
 };
+
+/**
+ * @brief variables to keep track of DDRAM addresses of displays
+ */
+static uint8_t LcdDisplayLine[LCD_DISPLAY_MAX];
 
 /******************************************************************************
  * Functions Prototypes
@@ -118,6 +124,8 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
         {
           LcdDisplay_SetCommand(Display, LcdDisplayInitCmds[cmd]);
         }
+
+      LcdDisplayLine[Display] = 0;
     }
 }
 
@@ -204,5 +212,35 @@ LcdDisplay_Delay(void)
   x++;
   x++;
   x++;
+}
+
+extern uint8_t 
+LcdDisplay_SetData(
+  LcdDisplay_t Display, 
+  uint8_t* Data, 
+  uint8_t DataSize)
+{
+  if(!(Data != 0x00 && Display < LCD_DISPLAY_MAX))
+  {
+    //TODO: Handle this error
+    return 0;
+  }
+
+  if(DataSize == 0) return 0;
+
+  uint8_t res;
+  uint8_t i = 0;
+  uint8_t ModifiedData;
+
+  do{
+    //Make the most significant bit 0 to mark as a data not a command
+    ModifiedData = Data[i] & 0x7F;
+
+    res = CircBuff_Enqueue(&LcdDisplayBuff[Display], ModifiedData);
+
+    i = (res == 1) ? (i + 1) : i;
+  } while(res == 1 && i < DataSize);
+
+  return i;
 }
 /*****************************End of File ************************************/
