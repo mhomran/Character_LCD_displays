@@ -227,16 +227,18 @@ LcdDisplay_Update(void)
 
       //Is it data or command
       if(Data & 0x80)
-	{
-	  Data = Data & 0x7F;
-	  LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_CMD);
-	}
+        {
+          //Reset the most significant bit again
+          Data = Data & 0x7F;
+          LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_CMD);
+        }
       else
-	{
-	  LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_DATA);
-	}
+        {
+          LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_DATA);
+        }
     }
 }
+
 static void
 LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
 {
