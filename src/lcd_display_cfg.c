@@ -15,7 +15,7 @@
 /******************************************************************************
 * Module Variable Definitions
 ******************************************************************************/
-static LcdDisplayConfig_t LcdDisplayConfig[LCD_DISPLAY_MAX] = {
+static const LcdDisplayConfig_t LcdDisplayConfig[LCD_DISPLAY_MAX] = {
   {
     .Display = LCD_DISPLAY_0,
     .En = PORTA_0,
@@ -37,7 +37,7 @@ static LcdDisplayConfig_t LcdDisplayConfig[LCD_DISPLAY_MAX] = {
  * @brief return the configuration structure holding the 
  * configuration table of the module
  */
-LcdDisplayConfig_t* const
+const LcdDisplayConfig_t* const
 LcdDisplay_GetConfig(void)
 {
   return LcdDisplayConfig;

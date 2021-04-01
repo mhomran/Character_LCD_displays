@@ -26,7 +26,7 @@
 /******************************************************************************
  * Includes
  ******************************************************************************/
-#include "dio.h"
+#include "../dio/dio.h"
 /******************************************************************************
  * Typedefs
  ******************************************************************************/
@@ -51,6 +51,19 @@ typedef struct
   DioChannel_t En; /**< the channel used to start writing */
   DioChannel_t Data[LCD_DISPLAY_BITLEN]; /**< the data channels */
 } LcdDisplayConfig_t;
+
+/******************************************************************************
+ * Function prototypes
+ ******************************************************************************/
+#ifdef __cplusplus
+extern "C"{
+#endif
+
+const LcdDisplayConfig_t* const LcdDisplay_GetConfig(void);
+
+#ifdef __cplusplus
+} // extern "C"
+#endif
 
 #endif /* end LCD_DISPLAY_CFG */
 /*****************************End of File ************************************/

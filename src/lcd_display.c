@@ -13,13 +13,13 @@
 /******************************************************************************
  * Definitions
  ******************************************************************************/
-#define LCD_DISPLAY_INIT_CMD_SIZE 4 /**< number of init commands */
+#define LCD_DISPLAY_INIT_CMD_SIZE 5 /**< number of init commands */
+
 
 /**
- * @brief Clears entire display and sets DDRAM address 0 in
- * address counter
+ * Set DDRAM address to "00H"
  */
-#define LCD_DISPLAY_CMD_CLEAR 0x01 /**< a command to clear display */
+#define LCD_DISPLAY_CMD_ADDRESS_RESET 0x02
 
 /**
  * @brief a command to choose 4-bit interface 
@@ -29,7 +29,7 @@
  * The 4-bit is better in using fewer numbers of IO pins than the 8-bit.
  * This command is for configuring the LCD for 4-bit
  */
-#define LCD_DISPLAY_CMD_4BIT 0x28 
+#define LCD_DISPLAY_CMD_4BIT 0x28
 
 /**
  * @brief a command to turn the display on and the cursor off.
@@ -40,6 +40,12 @@
  * @brief Increment display address for each character but do not scroll
  */
 #define LCD_DISPLAY_CMD_INC 0x06
+
+/**
+ * @brief Clears entire display and sets DDRAM address 0 in
+ * address counter
+ */
+#define LCD_DISPLAY_CMD_CLEAR 0x01 /**< a command to clear display */
 /******************************************************************************
  * Typedefs
  ******************************************************************************/
@@ -59,8 +65,7 @@ typedef enum
 /**
  * a pointer to the configuration table
  */
-static const LcdDisplayConfig_t* gConfig; 
-
+static const LcdDisplayConfig_t* gConfig;
 /**
  * @brief the Lcd displays data and commands buffers.
  * The most significant bit determines if the byte is a command or data. 
@@ -79,11 +84,13 @@ static CircBuff_t LcdDisplayBuff[LCD_DISPLAY_MAX];
  */
 static const uint8_t LcdDisplayInitCmds[LCD_DISPLAY_INIT_CMD_SIZE] =
 {
+  LCD_DISPLAY_CMD_ADDRESS_RESET,
   LCD_DISPLAY_CMD_4BIT,
   LCD_DISPLAY_CMD_ON,
   LCD_DISPLAY_CMD_INC,
   LCD_DISPLAY_CMD_CLEAR
 };
+
 
 /**
  * @brief variables to keep track of DDRAM addresses of displays
@@ -166,48 +173,6 @@ LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
     }
 }
 
-static void 
-LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
-{
-  if(!(Display < LCD_DISPLAY_MAX && Flag < LCD_DATA_FLAG_MAX))
-    {
-      //TODO: handle this error
-      return;
-    }
-  
-  uint8_t DataCh;
-  int8_t Nibble;
-
-  for(Nibble = 1; Nibble >= 0; Nibble--)
-    {
-      for(DataCh = 0; DataCh < LCD_DISPLAY_BITLEN; DataCh++)
-        {
-          if(Data & (1 << (DataCh + (LCD_DISPLAY_BITLEN * Nibble))))
-            {
-              Dio_ChannelWrite(gConfig[Display].Data[DataCh], DIO_STATE_HIGH);
-            }
-          else
-            {
-              Dio_ChannelWrite(gConfig[Display].Data[DataCh], DIO_STATE_LOW);
-            }
-        }
-      
-      if (Flag == LCD_DATA_FLAG_DATA)
-        {
-          Dio_ChannelWrite(gConfig[Display].Rs, DIO_STATE_LOW);
-        }
-      else
-        {
-          Dio_ChannelWrite(gConfig[Display].Rs, DIO_STATE_HIGH);
-        }
-
-      //latch
-      Dio_ChannelWrite(gConfig[Display].En, DIO_STATE_HIGH);
-      LcdDisplay_Delay();
-      Dio_ChannelWrite(gConfig[Display].En, DIO_STATE_LOW);
-      LcdDisplay_Delay();
-    }
-}
 
 static void 
 LcdDisplay_Delay(void)
@@ -219,11 +184,9 @@ LcdDisplay_Delay(void)
   x++;
 }
 
-extern uint8_t 
-LcdDisplay_SetData(
-  LcdDisplay_t Display, 
-  uint8_t* Data, 
-  uint8_t DataSize)
+extern uint8_t LcdDisplay_SetData(const LcdDisplay_t Display,
+				  const uint8_t* const Data,
+				  const uint8_t DataSize)
 {
   if(!(Data != 0x00 && Display < LCD_DISPLAY_MAX))
   {
@@ -248,4 +211,73 @@ LcdDisplay_SetData(
 
   return i;
 }
+
+extern void 
+LcdDisplay_Update(void)
+{
+  LcdDisplay_t Display;
+  uint8_t Data;
+  uint8_t res;
+
+  for(Display = LCD_DISPLAY_0; Display < LCD_DISPLAY_MAX; Display++)
+    {
+      // Find the next data/command
+      res = CircBuff_Dequeue(&LcdDisplayBuff[Display], &Data);
+      if(res == 0) continue;
+
+      //Is it data or command
+      if(Data & 0x80)
+	{
+	  Data = Data & 0x7F;
+	  LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_CMD);
+	}
+      else
+	{
+	  LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_DATA);
+	}
+    }
+}
+static void
+LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
+{
+  if(!(Display < LCD_DISPLAY_MAX && Flag < LCD_DATA_FLAG_MAX))
+    {
+      //TODO: handle this error
+      return;
+    }
+
+  uint8_t DataCh;
+  uint8_t Nibble;
+
+  for(Nibble = 2; Nibble >= 1; Nibble--)
+    {
+      for(DataCh = 0; DataCh < LCD_DISPLAY_BITLEN; DataCh++)
+        {
+          if(Data & (1 << (DataCh + (LCD_DISPLAY_BITLEN * (Nibble - 1)))))
+            {
+              Dio_ChannelWrite(gConfig[Display].Data[DataCh], DIO_STATE_HIGH);
+            }
+          else
+            {
+              Dio_ChannelWrite(gConfig[Display].Data[DataCh], DIO_STATE_LOW);
+            }
+        }
+
+      if (Flag == LCD_DATA_FLAG_DATA)
+        {
+          Dio_ChannelWrite(gConfig[Display].Rs, DIO_STATE_HIGH);
+        }
+      else
+        {
+          Dio_ChannelWrite(gConfig[Display].Rs, DIO_STATE_LOW);
+        }
+
+      //latch
+      Dio_ChannelWrite(gConfig[Display].En, DIO_STATE_HIGH);
+      LcdDisplay_Delay();
+      Dio_ChannelWrite(gConfig[Display].En, DIO_STATE_LOW);
+      LcdDisplay_Delay();
+    }
+}
+
 /*****************************End of File ************************************/
