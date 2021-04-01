@@ -56,7 +56,10 @@ typedef enum
 /******************************************************************************
  * Module variable definitions
  ******************************************************************************/
-const LcdDisplayConfig_t* gConfig; /**< a pointer to the configuration table */
+/**
+ * a pointer to the configuration table
+ */
+static const LcdDisplayConfig_t* gConfig; 
 
 /**
  * @brief the Lcd displays data and commands buffers.
@@ -107,8 +110,10 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
     }
 
   LcdDisplay_t Display;
-  uint8_t res;
   uint8_t cmd;
+
+  //assign the internal config pointer
+  gConfig = Config;
 
   //initialize the buffers
   for(Display = 0; Display < LCD_DISPLAY_MAX; Display++)
