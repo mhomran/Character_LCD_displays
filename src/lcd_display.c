@@ -14,6 +14,17 @@
  * Definitions
  ******************************************************************************/
 /**
+ * Command Identifier. If this byte is found in the buffer, then it's known
+ * that the next byte is an instruction.
+ */
+#define LCD_DISPLAY_CMD_ID 0x80
+
+/**
+ * DDRAM Identifier. This is a mask used to set DDRAM address.
+ */
+#define LCD_DISPLAY_DDRAM_MASK 0x80
+
+/**
  * Set DDRAM address to "00H"
  */
 #define LCD_DISPLAY_CMD_ADDRESS_RESET 0x02
@@ -186,9 +197,15 @@ LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
   
   uint8_t res;
 
-  Command = Command | 0x80;
-  res = CircBuff_Enqueue(&gBuff[Display], Command);
+  res = CircBuff_Enqueue(&gBuff[Display], LCD_DISPLAY_CMD_ID);
   if(res == 0) 
+    {
+      //TODO handle this error
+      return;
+    }
+
+  res = CircBuff_Enqueue(&gBuff[Display], Command);
+  if(res == 0)
     {
       //TODO handle this error
       return;
@@ -220,8 +237,8 @@ LcdDisplay_Delay(void)
 * \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
 * @param Display The id of the display.
 * @param Data A pointer to the data to show.
-* @param DataSize The number of charachters to send
-* @return uint8_t how many charachters are sent
+* @param DataSize The number of characters to send
+* @return uint8_t how many characters are sent
 ******************************************************************************/
 extern uint8_t 
 LcdDisplay_SetData(const LcdDisplay_t Display,
@@ -242,7 +259,7 @@ LcdDisplay_SetData(const LcdDisplay_t Display,
 
   do{
     //Make the most significant bit 0 to mark as a data not a command
-    ModifiedData = Data[i] & 0x7F;
+    ModifiedData = Data[i] & (~LCD_DISPLAY_CMD_ID);
 
     res = CircBuff_Enqueue(&gBuff[Display], ModifiedData);
 
@@ -272,10 +289,15 @@ LcdDisplay_Update(void)
       if(res == 0) continue;
 
       //Is it data or command
-      if(Data & 0x80)
+      if(Data == LCD_DISPLAY_CMD_ID)
         {
-          //Reset the most significant bit again
-          Data = Data & 0x7F;
+          res = CircBuff_Dequeue(&gBuff[Display], &Data);
+          if(res == 0)
+            {
+              //TODO: handle this error.
+              return;
+            }
+
           LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_CMD);
         }
       else
@@ -386,7 +408,7 @@ LcdDisplay_CheckLine(LcdDisplay_t Display)
         break;
       }
 
-      NewAddress = NewAddress | 0x80;
+      NewAddress = NewAddress | LCD_DISPLAY_DDRAM_MASK;
       LcdDisplay_SendByte(Display, NewAddress, LCD_DATA_FLAG_CMD);
     }
   else
