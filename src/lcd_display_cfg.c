@@ -18,6 +18,8 @@
 static const LcdDisplayConfig_t LcdDisplayConfig[LCD_DISPLAY_MAX] = {
   {
     .Display = LCD_DISPLAY_0,
+    .Width = 20,
+    .Height = 2,
     .En = PORTA_0,
     .Rs = PORTA_1,
     .Data =

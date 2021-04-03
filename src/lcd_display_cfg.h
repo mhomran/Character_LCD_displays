@@ -21,7 +21,7 @@
 /**
  * @brief the buffer size of the buffer used for holding data or commands 
  */
-#define LCD_DISPLAY_BUFF_SIZE 40 
+#define LCD_DISPLAY_BUFF_SIZE 200
 
 /******************************************************************************
  * Includes
@@ -46,7 +46,8 @@ typedef enum
 typedef struct
 {
   LcdDisplay_t Display; /**< The Display Id*/
-
+  uint8_t Width;
+  uint8_t Height;
   DioChannel_t Rs; /**< the channel used to choose data or instruction */
   DioChannel_t En; /**< the channel used to start writing */
   DioChannel_t Data[LCD_DISPLAY_BITLEN]; /**< the data channels */

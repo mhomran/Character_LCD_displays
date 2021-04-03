@@ -13,9 +13,6 @@
 /******************************************************************************
  * Definitions
  ******************************************************************************/
-#define LCD_DISPLAY_INIT_CMD_SIZE 5 /**< number of init commands */
-
-
 /**
  * Set DDRAM address to "00H"
  */
@@ -46,6 +43,9 @@
  * address counter
  */
 #define LCD_DISPLAY_CMD_CLEAR 0x01 /**< a command to clear display */
+
+#define LCD_DISPLAY_DDRAM_LINE_0 0x00 /**< DDRAM Address for line 0 */
+#define LCD_DISPLAY_DDRAM_LINE_1 0x40 /**< DDRAM Address for line 1 */
 /******************************************************************************
  * Typedefs
  ******************************************************************************/
@@ -71,31 +71,22 @@ static const LcdDisplayConfig_t* gConfig;
  * The most significant bit determines if the byte is a command or data. 
  * If it's 1, then the byte is a command.
  */
-static uint8_t LcdDisplayData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
+static uint8_t gData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
 
 /**
  * @brief the lcd displays data and commands buffers structures
  */
-static CircBuff_t LcdDisplayBuff[LCD_DISPLAY_MAX];
+static CircBuff_t gBuff[LCD_DISPLAY_MAX];
 
 /**
- * @brief The command that's required for LCD display initialization. 
- * Orders of the commands matter
+ * @brief variables to keep track of cursor position
  */
-static const uint8_t LcdDisplayInitCmds[LCD_DISPLAY_INIT_CMD_SIZE] =
-{
-  LCD_DISPLAY_CMD_ADDRESS_RESET,
-  LCD_DISPLAY_CMD_4BIT,
-  LCD_DISPLAY_CMD_ON,
-  LCD_DISPLAY_CMD_INC,
-  LCD_DISPLAY_CMD_CLEAR
-};
-
+static uint8_t gCursor[LCD_DISPLAY_MAX];
 
 /**
- * @brief variables to keep track of DDRAM addresses of displays
+ * @brief variables to keep track of the current line number of displays
  */
-static uint8_t LcdDisplayLine[LCD_DISPLAY_MAX];
+static uint8_t gLine[LCD_DISPLAY_MAX];
 
 /******************************************************************************
  * Functions Prototypes
@@ -104,6 +95,7 @@ static void LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data,
  LcdDataFlag_t Flag);
 static void LcdDisplay_Delay(void);
 static void LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command);
+static uint8_t LcdDisplay_CheckLine(LcdDisplay_t Display);
 /******************************************************************************
  * Functions definitions
  ******************************************************************************/
@@ -116,6 +108,17 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
       return;
     }
 
+  //The commands that're required for LCD display initialization. 
+  //Orders of the commands matter
+  const uint8_t InitCmds[] =
+  {
+    LCD_DISPLAY_CMD_ADDRESS_RESET,
+    LCD_DISPLAY_CMD_4BIT,
+    LCD_DISPLAY_CMD_ON,
+    LCD_DISPLAY_CMD_INC,
+    LCD_DISPLAY_CMD_CLEAR
+  };
+
   LcdDisplay_t Display;
   uint8_t cmd;
 
@@ -125,19 +128,20 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
   //initialize the buffers
   for(Display = 0; Display < LCD_DISPLAY_MAX; Display++)
     {
-      LcdDisplayBuff[Display] = CircBuff_Create(LcdDisplayData[Display],
+      gBuff[Display] = CircBuff_Create(gData[Display],
        LCD_DISPLAY_BUFF_SIZE);
     }
   
   //add init commands
   for(Display = 0; Display < LCD_DISPLAY_MAX; Display++)
     {
-      for(cmd = 0; cmd < LCD_DISPLAY_INIT_CMD_SIZE; cmd++)
+      for(cmd = 0; cmd < sizeof(InitCmds); cmd++)
         {
-          LcdDisplay_SetCommand(Display, LcdDisplayInitCmds[cmd]);
+          LcdDisplay_SetCommand(Display, InitCmds[cmd]);
         }
 
-      LcdDisplayLine[Display] = 0;
+      gCursor[Display] = 0;
+      gLine[Display] = 0;
     }
 }
 
@@ -150,6 +154,8 @@ LcdDisplay_Clear(LcdDisplay_t Display)
       return;
     }
 
+  gCursor[Display] = 0;
+  gLine[Display] = 0;
   LcdDisplay_SetCommand(Display, LCD_DISPLAY_CMD_CLEAR);
 }
 
@@ -165,7 +171,7 @@ LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
   uint8_t res;
 
   Command = Command | 0x80;
-  res = CircBuff_Enqueue(&LcdDisplayBuff[Display], Command);
+  res = CircBuff_Enqueue(&gBuff[Display], Command);
   if(res == 0) 
     {
       //TODO handle this error
@@ -204,9 +210,12 @@ extern uint8_t LcdDisplay_SetData(const LcdDisplay_t Display,
     //Make the most significant bit 0 to mark as a data not a command
     ModifiedData = Data[i] & 0x7F;
 
-    res = CircBuff_Enqueue(&LcdDisplayBuff[Display], ModifiedData);
+    res = CircBuff_Enqueue(&gBuff[Display], ModifiedData);
 
-    i = (res == 1) ? (i + 1) : i;
+    if(res == 1)
+      {
+        i++;
+      }
   } while(res == 1 && i < DataSize);
 
   return i;
@@ -221,8 +230,11 @@ LcdDisplay_Update(void)
 
   for(Display = LCD_DISPLAY_0; Display < LCD_DISPLAY_MAX; Display++)
     {
+      res = LcdDisplay_CheckLine(Display);
+      if(res == 0) continue;
+
       // Find the next data/command
-      res = CircBuff_Dequeue(&LcdDisplayBuff[Display], &Data);
+      res = CircBuff_Dequeue(&gBuff[Display], &Data);
       if(res == 0) continue;
 
       //Is it data or command
@@ -235,6 +247,7 @@ LcdDisplay_Update(void)
       else
         {
           LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_DATA);
+          gCursor[Display]++;
         }
     }
 }
@@ -282,4 +295,47 @@ LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
     }
 }
 
+static uint8_t
+LcdDisplay_CheckLine(LcdDisplay_t Display)
+{
+  uint8_t res = 0;
+  uint8_t NewAddress;
+  if(gCursor[Display] == gConfig[Display].Width)
+    {
+      gLine[Display]++;
+      gLine[Display] = gLine[Display] %
+        gConfig[Display].Height;
+      gCursor[Display] = 0;
+      switch(gLine[Display])
+      {
+        case 0:
+        NewAddress = LCD_DISPLAY_DDRAM_LINE_0;
+        break;
+
+        case 1:
+        NewAddress = LCD_DISPLAY_DDRAM_LINE_1;
+        break;
+
+        case 2:
+        NewAddress = LCD_DISPLAY_DDRAM_LINE_0 + gConfig[Display].Width;
+        break;
+
+        case 3:
+        NewAddress = LCD_DISPLAY_DDRAM_LINE_1 + gConfig[Display].Width;
+        break;
+
+        default:
+        //DO NOTHING
+        break;
+      }
+
+      NewAddress = NewAddress | 0x80;
+      LcdDisplay_SendByte(Display, NewAddress, LCD_DATA_FLAG_CMD);
+    }
+  else
+    {
+      res = 1;
+    }
+  return res;
+}
 /*****************************End of File ************************************/
