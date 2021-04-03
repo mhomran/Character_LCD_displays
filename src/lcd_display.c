@@ -99,6 +99,14 @@ static uint8_t LcdDisplay_CheckLine(LcdDisplay_t Display);
 /******************************************************************************
  * Functions definitions
  ******************************************************************************/
+/******************************************************************************
+* Function : LcdDisplay_Init()
+*//**
+* \b Description: Initialization function for LCD Display module<br/>
+* \b PRE-CONDITION: Configuration table is populated<br/>
+* @param Config a pointer to the configuration table of the displays.
+* @return void 
+******************************************************************************/
 extern void 
 LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
 {
@@ -145,6 +153,14 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
     }
 }
 
+/******************************************************************************
+* Function : LcdDisplay_Clear()
+*//**
+* \b Description: Clear the Display and move the cursor to the first char<br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @return void 
+******************************************************************************/
 extern void 
 LcdDisplay_Clear(LcdDisplay_t Display)
 {
@@ -180,6 +196,13 @@ LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
 }
 
 
+/******************************************************************************
+* Function : LcdDisplay_Delay()
+*//**
+* \b Description: Utility function used to make a small software delay for 
+* the enable pin cycle of the LCD Display <br/>
+* @return void 
+******************************************************************************/
 static void 
 LcdDisplay_Delay(void)
 {
@@ -190,9 +213,20 @@ LcdDisplay_Delay(void)
   x++;
 }
 
-extern uint8_t LcdDisplay_SetData(const LcdDisplay_t Display,
-				  const uint8_t* const Data,
-				  const uint8_t DataSize)
+/******************************************************************************
+* Function : LcdDisplay_SetData()
+*//**
+* \b Description: Set data in Lcd buffer to show it<br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @param Data A pointer to the data to show.
+* @param DataSize The number of charachters to send
+* @return uint8_t how many charachters are sent
+******************************************************************************/
+extern uint8_t 
+LcdDisplay_SetData(const LcdDisplay_t Display,
+                   const uint8_t* const Data,
+                   const uint8_t DataSize)
 {
   if(!(Data != 0x00 && Display < LCD_DISPLAY_MAX))
   {
@@ -252,6 +286,17 @@ LcdDisplay_Update(void)
     }
 }
 
+/******************************************************************************
+* Function : LcdDisplay_SendByte()
+*//**
+* \b Description: Utility function to send a char to show or a command to
+* execute on the lcd display<br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @param Data the command/char
+* @param Flag A flag to differentiate between commands and data
+* @return void 
+******************************************************************************/
 static void
 LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
 {
@@ -295,6 +340,18 @@ LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
     }
 }
 
+/******************************************************************************
+* Function : LcdDisplay_CheckLine()
+*//**
+* \b Description: Utility function to check if the cursor position should 
+* be updated. It updates the cursor postion if it reached the end of the 
+* current line. If it the cursos reached the last line, the new cursor 
+* position is at the first of the first line of the display.
+* execute on the lcd display<br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @return uint8_t 1 if there's no update, 0 otherwise
+******************************************************************************/
 static uint8_t
 LcdDisplay_CheckLine(LcdDisplay_t Display)
 {
