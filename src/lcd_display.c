@@ -417,4 +417,56 @@ LcdDisplay_CheckLine(LcdDisplay_t Display)
     }
   return res;
 }
+
+/******************************************************************************
+* Function : LcdDisplay_SetCursor()
+*//**
+* \b Description: function to set the position of the cursor <br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @param Row The row of the cursor in the display. It starts from zero.
+* @param Row The column of the cursor in the display. It starts from zero.
+* @return uint8_t 1 if the cursor set properly, 0 otherwise
+******************************************************************************/
+extern uint8_t 
+LcdDisplay_SetCursor(LcdDisplay_t Display, uint8_t Row, uint8_t Col)
+{
+  if(!(Display < LCD_DISPLAY_MAX &&
+       Row < gConfig[Display].Height &&
+       Col < gConfig[Display].Width))
+    {
+      return 0;
+    }
+  
+  uint8_t NewAddress;
+
+  switch(Row)
+  {
+    case 0:
+    NewAddress = LCD_DISPLAY_DDRAM_LINE_0;
+    break;
+
+    case 1:
+    NewAddress = LCD_DISPLAY_DDRAM_LINE_1;
+    break;
+
+    case 2:
+    NewAddress = LCD_DISPLAY_DDRAM_LINE_0 + gConfig[Display].Width;
+    break;
+
+    case 3:
+    NewAddress = LCD_DISPLAY_DDRAM_LINE_1 + gConfig[Display].Width;
+    break;
+
+    default:
+    //DO NOTHING
+    break;
+  }
+
+  NewAddress = NewAddress + Col;
+  NewAddress = NewAddress | LCD_DISPLAY_DDRAM_MASK;
+  LcdDisplay_SetCommand(Display, NewAddress); 
+  
+  return 1;
+}                                 
 /*****************************End of File ************************************/

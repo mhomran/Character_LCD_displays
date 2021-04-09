@@ -23,8 +23,11 @@ extern void LcdDisplay_Init(const LcdDisplayConfig_t * const Config);
 extern void LcdDisplay_Update(void);
 extern void LcdDisplay_Clear(LcdDisplay_t Display);
 extern uint8_t LcdDisplay_SetData(const LcdDisplay_t Display,
-				  const uint8_t* const Data,
-				  const uint8_t DataSize);
+                                  const uint8_t* const Data,
+                                  const uint8_t DataSize);
+extern uint8_t LcdDisplay_SetCursor(LcdDisplay_t Display,
+                                    uint8_t Row, 
+                                    uint8_t Col);
 
 #ifdef __cplusplus
 } // extern "C"
