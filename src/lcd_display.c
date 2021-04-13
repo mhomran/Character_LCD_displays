@@ -468,5 +468,27 @@ LcdDisplay_SetCursor(LcdDisplay_t Display, uint8_t Row, uint8_t Col)
   LcdDisplay_SetCommand(Display, NewAddress); 
   
   return 1;
-}                                 
+}
+
+/******************************************************************************
+* Function : LcdDisplay_CreateChar()
+*//**
+* \b Description: function to create a custom character. This character
+* will be stored in CGRAM (character generator RAM). There's just a capcity of
+* 8 chararcters <br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @param CharIndex The character index from 0 to 7.
+* @param Data A pointer to an array of bytes representing the character bitmap
+* 7 rows x 8 bits (the last row is reserved for the cursor). Just the first
+* 5 bits out of the 8 is used.
+* @return void
+******************************************************************************/
+extern void 
+LcdDisplay_CreateChar(const LcdDisplay_t Display,
+                      const uint8_t CharIndex,
+                      const uint8_t* const Data)
+{
+
+}
 /*****************************End of File ************************************/

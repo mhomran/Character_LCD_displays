@@ -29,6 +29,10 @@ extern uint8_t LcdDisplay_SetCursor(LcdDisplay_t Display,
                                     uint8_t Row, 
                                     uint8_t Col);
 
+extern void LcdDisplay_CreateChar(const LcdDisplay_t Display,
+                                  const uint8_t CharIndex,
+                                  const uint8_t* const Data);
+
 #ifdef __cplusplus
 } // extern "C"
 #endif
