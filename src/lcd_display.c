@@ -25,6 +25,11 @@
 #define LCD_DISPLAY_DDRAM_MASK 0x80
 
 /**
+ * CGRAM Identifier. This is a mask used to set CGRAM address.
+ */
+#define LCD_DISPLAY_CGRAM_MASK 0x40
+
+/**
  * Set DDRAM address to "00H"
  */
 #define LCD_DISPLAY_CMD_ADDRESS_RESET 0x02
@@ -489,6 +494,28 @@ LcdDisplay_CreateChar(const LcdDisplay_t Display,
                       const uint8_t CharIndex,
                       const uint8_t* const Data)
 {
+ if(!(Display < LCD_DISPLAY_MAX &&
+  CharIndex < 8 &&
+  Data != 0x00))
+  {
+    //TODO: handle this error
+    return;
+  }
 
+  uint8_t Row;
+  uint8_t CGRAMAddress;
+
+  for(Row = 0; Row < 7; Row++)
+    {
+      CGRAMAddress = (uint8_t)(CharIndex << 3);
+      CGRAMAddress = CGRAMAddress + Row;
+      CGRAMAddress |= LCD_DISPLAY_CGRAM_MASK;
+
+      LcdDisplay_SetCommand(Display, CGRAMAddress);
+      LcdDisplay_SetData(Display, &Data[Row], 1);
+    }
+  //Inform that the next data will be a DDRAM data
+  //by setting the cursor again
+  LcdDisplay_SetCursor(Display, gLine[Display], gCursor[Display]);
 }
 /*****************************End of File ************************************/

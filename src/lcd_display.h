@@ -13,6 +13,17 @@
 #include <inttypes.h>
 #include "lcd_display_cfg.h"
 /******************************************************************************
+ * Definitions
+ ******************************************************************************/
+#define LCD_DISPLAY_CGRAM_CHAR_0 0x00 /**< Character 0 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_1 0x01 /**< Character 1 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_2 0x02 /**< Character 2 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_3 0x03 /**< Character 3 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_4 0x04 /**< Character 4 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_5 0x05 /**< Character 5 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_6 0x06 /**< Character 6 of CGRAM code */ 
+#define LCD_DISPLAY_CGRAM_CHAR_7 0x07 /**< Character 7 of CGRAM code */ 
+/******************************************************************************
  * Function prototypes
  ******************************************************************************/
 #ifdef __cplusplus
