@@ -94,16 +94,6 @@ static uint8_t gData[LCD_DISPLAY_MAX][LCD_DISPLAY_BUFF_SIZE];
  */
 static CircBuff_t gBuff[LCD_DISPLAY_MAX];
 
-/**
- * @brief variables to keep track of cursor position
- */
-static uint8_t gCursor[LCD_DISPLAY_MAX];
-
-/**
- * @brief variables to keep track of the current line number of displays
- */
-static uint8_t gLine[LCD_DISPLAY_MAX];
-
 /******************************************************************************
  * Functions Prototypes
  ******************************************************************************/
@@ -111,7 +101,6 @@ static void LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data,
  LcdDataFlag_t Flag);
 static void LcdDisplay_Delay(void);
 static void LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command);
-static uint8_t LcdDisplay_CheckLine(LcdDisplay_t Display);
 /******************************************************************************
  * Functions definitions
  ******************************************************************************/
@@ -163,9 +152,6 @@ LcdDisplay_Init(const LcdDisplayConfig_t * const Config)
         {
           LcdDisplay_SetCommand(Display, InitCmds[cmd]);
         }
-
-      gCursor[Display] = 0;
-      gLine[Display] = 0;
     }
 }
 
@@ -186,8 +172,6 @@ LcdDisplay_Clear(LcdDisplay_t Display)
       return;
     }
 
-  gCursor[Display] = 0;
-  gLine[Display] = 0;
   LcdDisplay_SetCommand(Display, LCD_DISPLAY_CMD_CLEAR);
 }
 
@@ -286,9 +270,6 @@ LcdDisplay_Update(void)
 
   for(Display = LCD_DISPLAY_0; Display < LCD_DISPLAY_MAX; Display++)
     {
-      res = LcdDisplay_CheckLine(Display);
-      if(res == 0) continue;
-
       // Find the next data/command
       res = CircBuff_Dequeue(&gBuff[Display], &Data);
       if(res == 0) continue;
@@ -308,7 +289,6 @@ LcdDisplay_Update(void)
       else
         {
           LcdDisplay_SendByte(Display, Data, LCD_DATA_FLAG_DATA);
-          gCursor[Display]++;
         }
     }
 }
@@ -368,62 +348,6 @@ LcdDisplay_SendByte(LcdDisplay_t Display, uint8_t Data, LcdDataFlag_t Flag)
 }
 
 /******************************************************************************
-* Function : LcdDisplay_CheckLine()
-*//**
-* \b Description: Utility function to check if the cursor position should 
-* be updated. It updates the cursor postion if it reached the end of the 
-* current line. If it the cursos reached the last line, the new cursor 
-* position is at the first of the first line of the display.
-* execute on the lcd display<br/>
-* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
-* @param Display The id of the display.
-* @return uint8_t 1 if there's no update, 0 otherwise
-******************************************************************************/
-static uint8_t
-LcdDisplay_CheckLine(LcdDisplay_t Display)
-{
-  uint8_t res = 0;
-  uint8_t NewAddress;
-  if(gCursor[Display] == gConfig[Display].Width)
-    {
-      gLine[Display]++;
-      gLine[Display] = gLine[Display] %
-        gConfig[Display].Height;
-      gCursor[Display] = 0;
-      switch(gLine[Display])
-      {
-        case 0:
-        NewAddress = LCD_DISPLAY_DDRAM_LINE_0;
-        break;
-
-        case 1:
-        NewAddress = LCD_DISPLAY_DDRAM_LINE_1;
-        break;
-
-        case 2:
-        NewAddress = LCD_DISPLAY_DDRAM_LINE_0 + gConfig[Display].Width;
-        break;
-
-        case 3:
-        NewAddress = LCD_DISPLAY_DDRAM_LINE_1 + gConfig[Display].Width;
-        break;
-
-        default:
-        //DO NOTHING
-        break;
-      }
-
-      NewAddress = NewAddress | LCD_DISPLAY_DDRAM_MASK;
-      LcdDisplay_SendByte(Display, NewAddress, LCD_DATA_FLAG_CMD);
-    }
-  else
-    {
-      res = 1;
-    }
-  return res;
-}
-
-/******************************************************************************
 * Function : LcdDisplay_SetCursor()
 *//**
 * \b Description: function to set the position of the cursor <br/>
@@ -471,7 +395,7 @@ LcdDisplay_SetCursor(LcdDisplay_t Display, uint8_t Row, uint8_t Col)
   NewAddress = NewAddress + Col;
   NewAddress = NewAddress | LCD_DISPLAY_DDRAM_MASK;
   LcdDisplay_SetCommand(Display, NewAddress); 
-  
+
   return 1;
 }
 
@@ -494,7 +418,7 @@ LcdDisplay_CreateChar(const LcdDisplay_t Display,
                       const uint8_t CharIndex,
                       const uint8_t* const Data)
 {
- if(!(Display < LCD_DISPLAY_MAX &&
+  if(!(Display < LCD_DISPLAY_MAX &&
   CharIndex < 8 &&
   Data != 0x00))
   {
@@ -514,8 +438,5 @@ LcdDisplay_CreateChar(const LcdDisplay_t Display,
       LcdDisplay_SetCommand(Display, CGRAMAddress);
       LcdDisplay_SetData(Display, &Data[Row], 1);
     }
-  //Inform that the next data will be a DDRAM data
-  //by setting the cursor again
-  LcdDisplay_SetCursor(Display, gLine[Display], gCursor[Display]);
 }
 /*****************************End of File ************************************/
