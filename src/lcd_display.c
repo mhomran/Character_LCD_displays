@@ -175,6 +175,16 @@ LcdDisplay_Clear(LcdDisplay_t Display)
   LcdDisplay_SetCommand(Display, LCD_DISPLAY_CMD_CLEAR);
 }
 
+/******************************************************************************
+* Function : LcdDisplay_SetCommand()
+*//**
+* \b Description: A function to set a command in the LCD buffer. It set an 
+* identifier to (identify that it's a command) then the command.<br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* @param Display The id of the display.
+* @param Command The command.
+* @return void 
+******************************************************************************/
 static void 
 LcdDisplay_SetCommand(LcdDisplay_t Display, uint8_t Command)
 {
@@ -261,6 +271,15 @@ LcdDisplay_SetData(const LcdDisplay_t Display,
   return i;
 }
 
+/******************************************************************************
+* Function : LcdDisplay_Update()
+*//**
+* \b Description: When this function is called, it send a new byte 
+* representing a command or a data. It takes care of RS and EN pins <br/>
+* \b PRE-CONDITION: LcdDisplay_Init is called properly <br/>
+* \b POST-CONDITION: The new data/command is sent to LCDs <br/>
+* @return void
+******************************************************************************/
 extern void 
 LcdDisplay_Update(void)
 {
