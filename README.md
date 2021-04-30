@@ -7,5 +7,11 @@ The pattern is taken from the book <b>Patterns for Time-Triggered Embedded Syste
 # Demo
 <p align="center">
   <a href="" rel="noopener">
- <img src="https://github.com/mhomran/Character_LCD_displays/raw/master/assets/MoAli_Quote.JPG" alt="LCD Pattern"></a>
+ <img src="assets/MoAli_Quote.JPG" alt="LCD Pattern" style="width:50%; height: 50%;"></a>
+</p>
+
+# LCD Block Diagram
+<p align="center">
+  <a href="" rel="noopener">
+ <img src="assets/BlockDiagram.JPG" alt="LCD Block Diagram"></a>
 </p>
